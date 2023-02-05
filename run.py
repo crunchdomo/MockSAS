@@ -16,6 +16,7 @@ import csv
 LINE_DATA_POINTS = 10
 TOTAL_ROUNDS = 0
 NUM_SEEDS = 30
+CSV_name = "results.csv"
 
 SWIM_ORDERING = {"UCB-TN" : 1,
 "egreedy-0.2" : 2,
@@ -41,9 +42,9 @@ sys_name = mission_statement.split(".txt")[0]
 result_path = "results/" + sys_name + "/" 
 os.makedirs(result_path, exist_ok=True)
 
-NUM_SEEDS = int(sys.argv[1])
-CSV_name = str(sys.argv[2])
-
+if len(sys.argv) == 3:
+    NUM_SEEDS = int(sys.argv[1]) 
+    CSV_name = str(sys.argv[2])
 
 try:
     with open(mission_statement, 'r') as source:
