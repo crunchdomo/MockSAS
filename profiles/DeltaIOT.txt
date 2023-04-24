@@ -1,0 +1,20 @@
+LowTraffic {
+    features: {
+        packet_loss_rate: uniform(10, 20)
+    }
+    arms: {
+        ConfigA: utilityDeltaIoT(uniform(0, 100), uniform(0, 100), uniform(0, 100), uniform(1, 50), uniform(1, 50))
+        ConfigB: utilityDeltaIoT(uniform(0, 100), uniform(0, 100), uniform(0, 100), uniform(1, 50), uniform(1, 50))
+    }
+}
+
+HighTraffic {
+    features: {
+        packet_loss_rate: uniform(50, 70)
+    }
+    arms: {
+        ConfigA: utilityDeltaIoT(uniform(0, 100), uniform(0, 100), uniform(0, 100), uniform(1, 50), uniform(1, 50))
+        ConfigB: utilityDeltaIoT(uniform(0, 100), uniform(0, 100), uniform(0, 100), uniform(1, 50), uniform(1, 50))
+    }
+}
+Trace: (LowTraffic, 20) (HighTraffic,20)

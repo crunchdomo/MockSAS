@@ -58,7 +58,7 @@ class EnvironmentTransformer(Transformer):
             raise RuntimeError("Used a user-defined function which doesn't exist")
 
         def generic_generator(variables = None):
-            if(variables):
+            if variables:
                 while True:
                     try:
                         env_state = self.environment_grabber()
@@ -66,36 +66,42 @@ class EnvironmentTransformer(Transformer):
                         env_state = variables
                     final_params = []
                     for para in funpara:
-                        if(type(para) == str):
-                            variable_value = env_state[para]
-                            if(isinstance(variable_value,GeneratorType)):
-                                final_params.append(next(variable_value))
-                            elif(callable(variable_value)):
-                                raise RuntimeError('Nested more than implemented')
+                        if type(para) == str:
+                            if para in env_state:
+                                variable_value = env_state[para]
+                                if isinstance(variable_value, GeneratorType):
+                                    final_params.append(next(variable_value))
+                                elif callable(variable_value):
+                                    raise RuntimeError('Nested more than implemented')
+                                else:
+                                    final_params.append(variable_value)
                             else:
-                                final_params.append(variable_value)
-                        elif(isinstance(para, GeneratorType)):
+                                # Set a default value when the key is not found
+                                default_value = 0
+                                final_params.append(default_value)
+                        elif isinstance(para, GeneratorType):
                             final_params.append(next(para))
-                        elif(callable(para)):
+                        elif callable(para):
                             gen_from_callable = para(variables)
                             x = next(gen_from_callable)
                             final_params.append(x)
-                            funpara[funpara.index(para)] = gen_from_callable #should now remain a generator for next time
+                            funpara[funpara.index(para)] = gen_from_callable  # should now remain a generator for next time
 
                         else:
                             final_params.append(para)
 
                     yield my_function(*final_params)
-                    
+
             else:
                 while True:
                     final_params = []
                     for para in funpara:
-                        if(isinstance(para, GeneratorType)):
+                        if isinstance(para, GeneratorType):
                             final_params.append(next(para))
                         else:
                             final_params.append(para)
                     yield my_function(*final_params)
+
 
         if(any(type(param) == str for param in funpara) or any(callable(param) for param in funpara)):
             return generic_generator
@@ -244,35 +250,6 @@ class EnvironmentTransformer(Transformer):
         genn = self.generator_factory(args)
 
         return genn
-        # def normal_generator(variables = None):
-        #     if(variables):
-        #         while True:
-        #             try:
-        #                 env_state = self.environment_grabber()
-        #             except AttributeError:
-        #                 env_state = variables
-        #             final_params = []
-        #             for para in argg:
-        #                 if(type(para) == str):
-        #                     variable_value = env_state[para]
-        #                     if(isinstance(variable_value,GeneratorType)):
-        #                         final_params.append(next(variable_value))
-        #                     else:
-        #                         final_params.append(variable_value)
-        #                 else:
-        #                     final_params.append(para)
-        #             mean, stdev = final_params                    
-
-        #             yield np.random.normal(loc=mean,scale=stdev)
-        #     else:
-        #         mean, stdev = argg
-        #         while True:
-        #             yield np.random.normal(loc=mean,scale=stdev)
-
-        # if(any(type(param) == str for param in argg)):
-        #     return normal_generator
-        # else:
-        #     return normal_generator()
 
     def logistic(self,argg):
         def logistic_generator(variables = None):
@@ -313,82 +290,23 @@ class EnvironmentTransformer(Transformer):
         genn = self.generator_factory(args)
 
         return genn
-        # def truncnorm_generator(variables = None):
-        #     if(variables):
-        #         print("2oooo")
 
-        #         while True:
-        #             try:
-        #                 env_state = self.environment_grabber()
-        #             except AttributeError:
-        #                 env_state = variables
-        #             final_params = []
-        #             print(args)
-        #             #input("dem args")
-        #             for para in args:
-        #                 if(type(para) == str):
-        #                     variable_value = env_state[para]
-        #                     if(isinstance(variable_value,GeneratorType)):
-        #                         final_params.append(next(variable_value))
-        #                     else:
-        #                         final_params.append(variable_value)
-        #                 elif(isinstance(para, GeneratorType)):
-        #                     final_params.append(next(para))
-        #                 elif(callable(para)):
-        #                     input("this should only happen once")
-        #                     gen_from_callable = para(variables)
-        #                     final_params.append(next(gen_from_callable))
-        #                     args[args.index(para)] = gen_from_callable #should now remain a generator for next time
-
-        #                 else:
-        #                     final_params.append(para)
-        #             print(final_params)
-        #             input("final_params")
-        #             lower, upper, mean, stdev = final_params
-                
-        #             a, b = (lower - mean) / stdev, (upper - mean) / stdev
-                
-        #             yield truncnorm.rvs(a,b, loc= mean, scale=stdev)
-        #     else:
-        #         print("1oooo")
-        #         input(args)
-        #         final_params = []
-        #         for para in args:
-        #             if(isinstance(para, GeneratorType)):
-        #                 final_params.append(next(para))
-        #             else:
-        #                 final_params.append(para)
-        #         lower, upper, mean, stdev = final_params #this can be simplified by using **kwargs and the correct names from the beginning and then unpacking it into the needed function
-        #         a, b = (lower - mean) / stdev, (upper - mean) / stdev
-        #         while True:
-        #             yield truncnorm.rvs(a,b, loc= mean, scale=stdev)
-
-        # print("looking at the args here")
-        # input(args)
-        # if(any(type(param) == str for param in args) or any(callable(param) for param in args)):
-        #     return truncnorm_generator
-        # else:
-        #     return truncnorm_generator()
     def constant(self,args):
 
         def const_generator(variables = None):
             if(variables):
                 while True: 
-                    #here you need to grab the environment state and incorporate it into the potential yield.
-                    #the grabber can be a function...
                     try:
                         env_state = self.environment_grabber()
                     except AttributeError:
                         env_state = variables
-
-                    environment_var = env_state[args[0]]
-                    if(isinstance(environment_var,GeneratorType)):
-                        yield next(environment_var)
+                        
+                    if 'packet_loss_rate' in env_state:
+                        yield env_state['packet_loss_rate']
                     else:
-                        yield env_state[args[0]]
+                        raise KeyError('packet_loss_rate not found in environment state')
             else:
                 while True: 
-                    #print(self.environment_grabber())
                     yield args[0]
         if(type(args[0]) == str):  return const_generator
         else: return const_generator()
@@ -407,45 +325,6 @@ class EnvironmentTransformer(Transformer):
 
         return genn
 
-        # funcname, *funpara = args
-
-        # try:
-        #     my_function = getattr(userfunctions, funcname)
-        # except AttributeError:
-        #     raise RuntimeError("Used a user-defined function which doesn't exist")
-        # def functional_generator(variables = None):
-        #     if(variables):
-        #         while True:
-        #             try:
-        #                 env_state = self.environment_grabber()
-        #             except AttributeError:
-        #                 env_state = variables
-        #             final_params = []
-        #             for para in funpara:
-        #                 if(type(para) == str):
-        #                     variable_value = env_state[para]
-        #                     if(isinstance(variable_value,GeneratorType)):
-        #                         final_params.append(next(variable_value))
-        #                     else:
-        #                         final_params.append(variable_value)
-        #                 else:
-        #                     final_params.append(para)
-                                   
-        #             #input("paaa" + str(one_for_now))
-                    
-        #             yield my_function(*final_params)
-        #     else:
-                
-        #         #input("paaa2" + str(one_for_now))
-
-        #         while True:
-        #             yield my_function(*funpara)
-        # if(any(type(param) == str for param in funpara)):
-        #     return functional_generator
-        # else:
-        #     return functional_generator()
-            
-    
 
     VARIABLE = str
     indefinite = tuple
