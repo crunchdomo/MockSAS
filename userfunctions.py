@@ -1,5 +1,13 @@
 from scipy.stats import truncnorm
+import gym
+from gym import spaces
 import numpy as np
+import ast
+import os
+import pandas as pd
+import xml.etree.ElementTree as ET
+from glob import glob
+
 
 def myfunction(posarg, posarg2):
     print(posarg)
@@ -61,30 +69,133 @@ def utilitySWIM(arrival_rate, dimmer, avg_response_time, max_servers, servers):
     print(truncated_reward)
     return truncated_reward
 
-def utilityDeltaIoT(packet_loss_rate, energy_consumption, connectivity, max_motes, active_motes):
-    # Weights for the utility components but they're comnpletely random. Still figuring out how to calculate them
-    mote_cost = uniform(0,50)
-    packet_loss_weight = 0.3
-    energy_weight = 0.75
-    mote_weight = 0.5
-    connectivity_weight = 0.25
 
 
-    upl = packet_loss_rate
-    uec = energy_consumption 
-    uc = mote_cost * (max_motes - active_motes)
-    conn = connectivity
+def xml_to_df(root, path):
+    data = []
+    for element in root.findall(path):
+        row = {}
+        for child in element:
+            row[child.tag] = child.text
+        for key, value in element.attrib.items():
+            row[key] = value
+        data.append(row)
+    df = pd.DataFrame(data)
+    return df
 
-    #the variables above are the utility components
+# Define the base directory
+base_dir = "Final Runs" #Change this to your base directory! 
 
-    print(f"upl: {upl}, uec: {uec}, uc: {uc}, conn: {conn}")  # Debug - Print the values of the utility components
+# Define the environments
+environments = ["City", "Forest", "Plains"]
 
-    utility = (packet_loss_weight * upl) + (energy_weight * uec) + (mote_weight * uc) + (connectivity_weight * conn)
+# Define the power settings
+power_settings = [f"PS {i}" for i in range(1, 15)]
 
-    print(f"utility before truncation: {utility}")  # Utility is very fucked - why? - Print the utility before truncation 
+# Define the runs
+runs = [f"Run {i}" for i in range(1, 4)]
 
-    truncated_utility = truncate(utility)
-    print(truncated_utility)
-    return truncated_utility
+# The DataFrame to hold all the data
+all_data = pd.DataFrame()
+
+# Iterate over environments, power settings, and runs
+for environment in environments:
+    for power_setting in power_settings:
+        for run in runs:
+            run_dir = os.path.join(base_dir, environment, power_setting, run)
+            
+            # Parse the main XML file
+            main_file = os.path.join(run_dir, "main.xml")
+            tree = ET.parse(main_file)
+            root = tree.getroot()
+            df_main = xml_to_df(root, './/mote[number="1"]/receivedTransmissions/receivedTransmission')
+            
+            # Parse the mote XML files
+            mote_files = glob(os.path.join(run_dir, "mote_*.xml"))
+            df_motes = pd.concat([xml_to_df(ET.parse(file).getroot(), './/transmissionPower') for file in mote_files])
+            
+            # Ensure 'moteIdentifier' and 'transmissionPower' are the same type (string)
+            df_main[['moteIdentifier', 'transmissionPower']] = df_main[['moteIdentifier', 'transmissionPower']].astype(str)
+            df_motes[['moteIdentifier', 'transmissionPower']] = df_motes[['moteIdentifier', 'transmissionPower']].astype(str)
+            
+            # Merge the data based on 'moteIdentifier' and 'transmissionPower'
+            run_data = pd.merge(df_main, df_motes, on=['moteIdentifier', 'transmissionPower'])
+
+            # Add information about the run directory
+            run_data['run_directory'] = run_dir
+            
+            # Add the run data to the overall data
+            all_data = pd.concat([all_data, run_data])
+
+# Convert the string representation of tuples into actual tuples
+all_data['powerSetting'] = all_data['powerSetting'].apply(ast.literal_eval)
+
+# Split the powerSetting column into two new columns
+all_data[['transmissionCount', 'powerSetting']] = pd.DataFrame(all_data['powerSetting'].tolist(), index=all_data.index)
+
+# Ensure 'powerSetting' is integer type
+all_data['powerSetting'] = all_data['powerSetting'].astype(int)
+
+all_data['collision'] = all_data['collision'].map({'true': True, 'false': False})
+
+all_data['received'] = all_data['received'].map({'true': True, 'false': False})
+
+# Convert the 'energy' column to numeric, forcing non-numeric values to NaN
+all_data['energy'] = pd.to_numeric(all_data['energy'], errors='coerce')
+
+def powerConsumed(powerSetting):
+    # Filter the data for the given environment and power setting
+    filtered_data = all_data[(all_data['powerSetting'] == powerSetting)]
+
+    # Calculate the mean and std deviation of the energy consumption
+    mean_power = filtered_data['energy'].mean()
+    std_power = filtered_data['energy'].std()
+
+    # Get the total number of trials (energy consumptions) for the given power setting and environment
+    n = len(filtered_data)
+    print('Number of energy readings:', n)
+    
+    # number of repetitions
+    num_repetitions = 1000
+
+    # Generate multiple normal samples
+    normal_samples = np.random.normal(mean_power, std_power, num_repetitions)
+
+    return normal_samples.mean()
+
+def packet_loss(environment,powerSetting):
+    # Filter the data for the given environment and power setting
+    filtered_data = all_data[(all_data['environment'] == environment) & (all_data['powerSetting'] == powerSetting)]
+    # print(filtered_data)
+    # Calculate the packet loss rate
+    packet_loss_rate = len(filtered_data[filtered_data['received'] == True]) / len(filtered_data)
+    
+    # Get the total number of trials (packet transmissions) for the given power setting and environment
+    n = len(filtered_data)
+    # print('fNumber of Transmissions:',n)
+    
+    # number of repetitions
+    num_repetitions = 1000
+
+    # Generate multiple binomial samples
+    binomial_samples = np.random.binomial(n, (1-packet_loss_rate), num_repetitions)
+
+    return binomial_samples.mean()
 
 
+def utilityDingNet(environment, powerSetting):
+    # Calculate the packet loss and power consumed for the given environment and power setting
+    print(f"Environment: {environment}, PowerSetting: {powerSetting}")
+    packet_loss_rate = packet_loss(environment, powerSetting)
+    # print(packet_loss_rate)
+    # power_consumed = powerConsumed(powerSetting)
+    
+    # Calculate the utility as the inverse of the packet loss rate multiplied by the inverse of the power consumed
+    # utility = 1 / packet_loss_rate * 1 / power_consumed
+    # truncated_reward = truncate(utility)
+    
+    return packet_loss_rate
+
+
+# print(packet_loss("Forest", 1))
+print(utilityDingNet("Forest", 1))

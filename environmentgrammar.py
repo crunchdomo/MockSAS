@@ -18,7 +18,9 @@ environment_grammar = """
     context: CNAME "{" environment_definition? arm_definition "}"
     arm_definition: "arms: {" actionpair+ "}"
     environment_definition:  "features: {" environpair+ "}" 
-    environpair:  CNAME ":" (NUMBER | dist) 
+    environpair:  CNAME ":" (STRING | dist)
+    forest: "CNAME" "{" context_definition "}"
+    STRING: /"[^"]*"/ 
     actionpair: CNAME ":" dist
     dist: (uniform | normal | truncated_normal | logisitic | inactive | constant | userfunction)
     normal: "normal(" mean "," stdev ")"
@@ -29,7 +31,7 @@ environment_grammar = """
     inactive: "inactive()"
     userfunction: CNAME "(" value ("," value)* ")"
 
-    value: (NUMBER | VARIABLE | userfunction)
+    value: (STRING | NUMBER | VARIABLE | userfunction)
 
     VARIABLE: CNAME
     stdev: value
@@ -41,14 +43,24 @@ environment_grammar = """
     %import common.INT
     %import common.NUMBER
     %import common.CNAME
-    %import common.WORD
     %import common.WS
+    %import common.WORD
+    %import common.STRING
     %ignore WS
 """
+
 
 class EnvironmentTransformer(Transformer):
     all_arms = set()
 
+    # New method added to convert a string to a generator
+    def str_to_generator(self, str_value):
+        def str_generator():
+            while True:
+                yield str_value
+        return str_generator
+
+    # generator_factory function replaced by str_to_generator function
     def generator_factory(self, args):
         funcname, *funpara = args
         
@@ -77,8 +89,8 @@ class EnvironmentTransformer(Transformer):
                                     final_params.append(variable_value)
                             else:
                                 # Set a default value when the key is not found
-                                default_value = 0
-                                final_params.append(default_value)
+                                default_value = self.str_to_generator(para)
+                                final_params.append(next(default_value))
                         elif isinstance(para, GeneratorType):
                             final_params.append(next(para))
                         elif callable(para):
@@ -86,10 +98,8 @@ class EnvironmentTransformer(Transformer):
                             x = next(gen_from_callable)
                             final_params.append(x)
                             funpara[funpara.index(para)] = gen_from_callable  # should now remain a generator for next time
-
                         else:
                             final_params.append(para)
-
                     yield my_function(*final_params)
 
             else:
@@ -332,6 +342,7 @@ class EnvironmentTransformer(Transformer):
     CNAME = str
     INT = int
     NUMBER = float
+    STRING = str
     #contextname = lambda x: str
     lower = value
     upper = value
@@ -339,7 +350,3 @@ class EnvironmentTransformer(Transformer):
     LENGTH = float
     # VARIANCE = float
     mean = value
-
-
-
-

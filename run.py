@@ -35,7 +35,7 @@ SWIM_ORDERING = {"UCB-TN" : 1,
 "DUCB-0.89" : 15}
 plt.style.use('seaborn-bright')
 parser = Lark(environment_grammar)
-mission_statement = "profiles/DeltaIOT.txt"
+mission_statement = "profiles/DingNet.txt"
 
 sys_name = mission_statement.split(".txt")[0]
 
