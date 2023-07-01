@@ -69,7 +69,8 @@ def utilitySWIM(arrival_rate, dimmer, avg_response_time, max_servers, servers):
     print(truncated_reward)
     return truncated_reward
 
-
+#############################################################################################################
+#EVERYTHING BELOW HERE IS FOR DINGNET. THIS IS WHERE WE WILL BE WORKING! <3 
 
 def xml_to_df(root, path):
     data = []
@@ -153,7 +154,7 @@ def powerConsumed(powerSetting):
 
     # Get the total number of trials (energy consumptions) for the given power setting and environment
     n = len(filtered_data)
-    print('Number of energy readings:', n)
+    # print('Number of energy readings:', n)
     
     # number of repetitions
     num_repetitions = 1000
@@ -163,39 +164,173 @@ def powerConsumed(powerSetting):
 
     return normal_samples.mean()
 
-def packet_loss(environment,powerSetting):
+
+
+def _packet_success(environment, powerSetting):
     # Filter the data for the given environment and power setting
     filtered_data = all_data[(all_data['environment'] == environment) & (all_data['powerSetting'] == powerSetting)]
-    # print(filtered_data)
+    
     # Calculate the packet loss rate
-    packet_loss_rate = len(filtered_data[filtered_data['received'] == True]) / len(filtered_data)
+    _packet_success = len(filtered_data[filtered_data['received'] == True]) / len(filtered_data)
     
     # Get the total number of trials (packet transmissions) for the given power setting and environment
     n = len(filtered_data)
-    # print('fNumber of Transmissions:',n)
+    # print("Legnth of data:", n)
     
     # number of repetitions
     num_repetitions = 1000
 
     # Generate multiple binomial samples
-    binomial_samples = np.random.binomial(n, (1-packet_loss_rate), num_repetitions)
+    binomial_samples = np.random.binomial(n, (1-_packet_success), num_repetitions)
+    # print(f"Environment: {environment}, PowerSetting: {powerSetting}")
 
     return binomial_samples.mean()
 
 
-def utilityDingNet(environment, powerSetting):
-    # Calculate the packet loss and power consumed for the given environment and power setting
-    print(f"Environment: {environment}, PowerSetting: {powerSetting}")
-    packet_loss_rate = packet_loss(environment, powerSetting)
-    # print(packet_loss_rate)
-    # power_consumed = powerConsumed(powerSetting)
-    
-    # Calculate the utility as the inverse of the packet loss rate multiplied by the inverse of the power consumed
-    # utility = 1 / packet_loss_rate * 1 / power_consumed
-    # truncated_reward = truncate(utility)
-    
-    return packet_loss_rate
+# #Print Packet Success Rate
+# for i in range(1, 15):
+#    print("City",i,":",_packet_success("City", i))
+   
+# for i in range(1, 15):
+#    print("Forest",i,":",_packet_success("Forest", i))
+
+# for i in range(1, 15):
+#    print("Plain",i,":",_packet_success("Plain", i))
+
+# #Print Power Consumed
+# for i in range(1, 15):
+#    print("Power",i,":",powerConsumed(i))
+
+# def normalize(value, min_value, max_value):
+#     normalized_value = (value - min_value) / (max_value - min_value)
+#     return normalized_value
+
+#NEEDED TO MAKE UTILITY FUNCTION WORK! <3
+def _packet_success_forest(powerSetting):
+    return _packet_success("Forest", powerSetting)
+
+def _packet_success_city(powerSetting):
+    return _packet_success("City", powerSetting)
+
+def _packet_success_plain(powerSetting):
+    return _packet_success("Plain", powerSetting)
+
+#THIS IS MY UTILITY FUNCTION FOR DINGNET
+
+#MAYBE ADD SOME PRETTY GRAPHS TOO? >:) <3
+def _utilityDingNet(_packet_success_func, power_func, powerSetting, power_penalty_factor):
+    # compute the packet success rate using the passed function
+    _packet_success = _packet_success_func(powerSetting)
+    # compute the power consumed using the passed function
+    power_consumed = power_func(powerSetting)
+    # utility computation logic
+    utility = _packet_success - power_penalty_factor * power_consumed
+    return utility
+
+def utilityDingNet_forest(powerSetting):
+    return _utilityDingNet(_packet_success_forest, powerConsumed, powerSetting, 0.5)
+
+def utilityDingNet_city(powerSetting):
+    return _utilityDingNet(_packet_success_city, powerConsumed, powerSetting, 0.5)
+
+def utilityDingNet_plain(powerSetting):
+    return _utilityDingNet(_packet_success_plain, powerConsumed, powerSetting, 0.5)
+
+print(utilityDingNet_forest(1))
+print(utilityDingNet_forest(14))
 
 
-# print(packet_loss("Forest", 1))
-print(utilityDingNet("Forest", 1))
+#EXHAUSTIVE SEARCH ALGORITHM BELOW 
+def best_power_environment():
+    best_power_settings = {}
+    for powerSetting in range(1, 15):
+        forest_utility = utilityDingNet_forest(powerSetting)
+        city_utility = utilityDingNet_city(powerSetting)
+        plain_utility = utilityDingNet_plain(powerSetting)
+        
+        if 'Forest' not in best_power_settings or forest_utility > best_power_settings['Forest'][1]:
+            best_power_settings['Forest'] = (powerSetting, forest_utility)
+
+        if 'City' not in best_power_settings or city_utility > best_power_settings['City'][1]:
+            best_power_settings['City'] = (powerSetting, city_utility)
+
+        if 'Plain' not in best_power_settings or plain_utility > best_power_settings['Plain'][1]:
+            best_power_settings['Plain'] = (powerSetting, plain_utility)
+            
+    return best_power_settings
+
+print(best_power_environment())
+
+
+#BELOW IS THE OLD EXHAUSTIVE SEARCH ALGORITHMS. THE ONE ABOVE IS THE ONE WE ARE USING.
+#############################################################################################################
+
+
+# def exhaustive_search(n_trials):
+#     # Define the environments and power settings
+#     environments = ["Forest", "City", "Plain"]
+#     power_settings = list(range(1, 15))
+    
+#     # Initialize a dictionary to store the total best power setting for each environment
+#     total_best_power_settings = {environment: 0 for environment in environments}
+    
+#     for _ in range(n_trials):
+#         for environment in environments:
+#             best_utility = -float('inf')
+#             best_power_setting = None
+            
+#             for power_setting in power_settings:
+#                 if environment == "Forest":
+#                     utility = utilityDingNet_forest(power_setting)
+#                 elif environment == "City":
+#                     utility = utilityDingNet_city(power_setting)
+#                 elif environment == "Plain":
+#                     utility = utilityDingNet_plain(power_setting)
+                
+#                 if utility > best_utility:
+#                     best_utility = utility
+#                     best_power_setting = power_setting
+            
+#             total_best_power_settings[environment] += best_power_setting
+    
+#     # Compute the average best power setting for each environment
+#     average_best_power_settings = {environment: total / n_trials for environment, total in total_best_power_settings.items()}
+    
+#     return average_best_power_settings
+
+# n_trials = 3  # Replace with the desired number of trials
+# average_best_power_settings = exhaustive_search(n_trials)
+# for environment, avg_best_power_setting in average_best_power_settings.items():
+#     print(f"The average best power setting for {environment} over {n_trials} trials is {avg_best_power_setting}")
+
+
+# def exhaustive_search():
+#     # Define the environments and power settings
+#     environments = ["Forest", "City", "Plain"]
+#     power_settings = list(range(1, 15))
+    
+#     best_configs = {}
+    
+#     for environment in environments:
+#         best_utility = -float('inf')
+#         best_power_setting = None
+        
+#         for power_setting in power_settings:
+#             if environment == "Forest":
+#                 utility = utilityDingNet_forest(power_setting)
+#             elif environment == "City":
+#                 utility = utilityDingNet_city(power_setting)
+#             elif environment == "Plain":
+#                 utility = utilityDingNet_plain(power_setting)
+            
+#             if utility > best_utility:
+#                 best_utility = utility
+#                 best_power_setting = power_setting
+        
+#         best_configs[environment] = (best_power_setting, best_utility)
+    
+#     return best_configs
+
+# best_configs = exhaustive_search()
+# for environment, (best_power_setting, best_utility) in best_configs.items():
+#     print(f"The best power setting for {environment} is {best_power_setting} with a utility of {best_utility}")

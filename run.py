@@ -1,4 +1,3 @@
-
 from masced_bandits.bandits import init_bandit
 from masced_bandits.bandit_options import initialize_arguments
 from environmentgrammar import environment_grammar, EnvironmentTransformer
@@ -16,7 +15,7 @@ import csv
 LINE_DATA_POINTS = 10
 TOTAL_ROUNDS = 0
 NUM_SEEDS = 30
-CSV_name = "resultsDelta.csv"
+CSV_name = "resultDingNet2.csv"
 
 SWIM_ORDERING = {"UCB-TN" : 1,
 "egreedy-0.2" : 2,
@@ -35,7 +34,7 @@ SWIM_ORDERING = {"UCB-TN" : 1,
 "DUCB-0.89" : 15}
 plt.style.use('seaborn-bright')
 parser = Lark(environment_grammar)
-mission_statement = "profiles/DingNet.txt"
+mission_statement = "profiles/DingNetProfile.txt"
 
 sys_name = mission_statement.split(".txt")[0]
 
@@ -97,7 +96,7 @@ configs = egreedies + ucbs + exp3s + discountucbs
 #configs = [[{'name': "ETC", 'exploration_rounds': "1"}], [{'name': "UCB", 'formula': "TN"}], [{'name': "egreedy", 'epsilon': "0.1"}], [{'name': "EXP3", 'learning_rate': "0.03"}], [{'name': "EXP3", 'learning_rate': "0.05"}], [{'name': "EXP3", 'learning_rate': "0.07"}], [{'name': "EXP3", 'learning_rate': "0.08"}]]
 
 for config in configs:
-    final_res[describe_config(config)] = {"boxplot": [], "lineplot" : [], "positions": [], "match_swim": []}
+    final_res[describe_config(config)] = {"boxplot": [], "lineplot" : [], "positions": [], "match_dingnet": []}
 
 for i in range(NUM_SEEDS):
     all_res = {}
@@ -125,7 +124,7 @@ for i in range(NUM_SEEDS):
     ranking = (list({k: v for k, v in sorted(position_dict.items(), key=lambda item: item[1], reverse= True)}.keys()))
 
     for policy in ranking:
-        final_res[policy]["match_swim"].append(1 if ((ranking.index(policy)+1) == SWIM_ORDERING[policy]) else 0)
+        final_res[policy]["match_dingnet"].append(1 if ((ranking.index(policy)+1) == SWIM_ORDERING[policy]) else 0)
         final_res[policy]["positions"].append(ranking.index(policy)+1)
 
 
@@ -133,8 +132,54 @@ for i in range(NUM_SEEDS):
 
 #
 
-#pprint.pprint(final_res)
-#print(str(final_res.keys()))
+# pprint.pprint(final_res)
+# print(str(final_res.keys()))
+
+# boxplot_data = []
+# boxplot_labels = []
+
+# lineplot_data = {}
+# for config_key in final_res.keys():
+#     boxplot_data.append(final_res[config_key]["boxplot"])
+#     boxplot_labels.append(str(config_key))
+
+#     stacked_data = final_res[config_key]["lineplot"]
+#     # pprint.pprint(stacked_data)
+#     # input("stacked data")
+#     # for run_tuple in zip(*stacked_data):
+#     #     pprint.pprint(run_tuple)
+#     #     input("zip_tuple")
+#     lineplot_data[str(config_key)] = [mean(run_tuple) for run_tuple in zip(*stacked_data)]
+
+# row_titles = ["Policy Name", "Mean", "Median", "Upper Q", "Lower Q", "IQR", "Upper W", "Lower W", "Average Ranking", "Percentage Matching SWIM"]
+# all_rows = [row_titles]
+# for i, datum in enumerate(boxplot_data):
+
+#     entry_row = []
+
+#     entry_row.append(boxplot_labels[i])
+
+#     data_mean = np.mean(datum)
+#     median = np.median(datum)
+#     upper_quartile = np.percentile(datum, 75)
+#     lower_quartile = np.percentile(datum, 25)
+
+#     iqr = upper_quartile - lower_quartile
+#     upper_whisker = np.array(datum)[datum<=upper_quartile+1.5*iqr].max()
+#     lower_whisker = np.array(datum)[datum>=lower_quartile-1.5*iqr].min()
+
+#     average_rank = np.mean(final_res[boxplot_labels[i]]["positions"])
+#     perct_match = str(np.mean(final_res[boxplot_labels[i]]["match_swim"]) * 100) + "%"
+
+
+#     entry_row+=[median,data_mean,upper_quartile,lower_quartile,iqr,upper_whisker,lower_whisker, average_rank, perct_match]
+
+#     all_rows.append(entry_row)
+
+
+#DingNet
+pprint.pprint(final_res)
+print(str(final_res.keys()))
 
 boxplot_data = []
 boxplot_labels = []
@@ -152,7 +197,7 @@ for config_key in final_res.keys():
     #     input("zip_tuple")
     lineplot_data[str(config_key)] = [mean(run_tuple) for run_tuple in zip(*stacked_data)]
 
-row_titles = ["Policy Name", "Mean", "Median", "Upper Q", "Lower Q", "IQR", "Upper W", "Lower W", "Average Ranking", "Percentage Matching SWIM"]
+row_titles = ["Policy Name", "Mean", "Median", "Upper Q", "Lower Q", "IQR", "Upper W", "Lower W", "Average Ranking", "Percentage Matching DingNet"]
 all_rows = [row_titles]
 for i, datum in enumerate(boxplot_data):
 
@@ -170,14 +215,12 @@ for i, datum in enumerate(boxplot_data):
     lower_whisker = np.array(datum)[datum>=lower_quartile-1.5*iqr].min()
 
     average_rank = np.mean(final_res[boxplot_labels[i]]["positions"])
-    perct_match = str(np.mean(final_res[boxplot_labels[i]]["match_swim"]) * 100) + "%"
+    perct_match = str(np.mean(final_res[boxplot_labels[i]]["match_dingnet"]) * 100) + "%"
 
 
     entry_row+=[median,data_mean,upper_quartile,lower_quartile,iqr,upper_whisker,lower_whisker, average_rank, perct_match]
 
     all_rows.append(entry_row)
-
-
 
 
 with open(result_path + CSV_name, 'w', newline='') as csvfile:
@@ -211,3 +254,6 @@ def lineplotter(lineplot_data,result_path):
 
     plt.savefig(result_path + "lineplot.pdf") 
     plt.cla()
+
+# boxplotter("/Users/adamoentoro/Documents/GitHub/MockSAS/profiles/DingNetProfile.txt")
+# lineplotter("/Users/adamoentoro/Documents/GitHub/MockSAS/profiles/DingNetProfile.txt")

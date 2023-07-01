@@ -1,0 +1,54 @@
+Forest{
+    arms: {
+        PS1: utilityDingNet_forest(1.0)
+        PS2: utilityDingNet_forest(2.0)
+        PS3: utilityDingNet_forest(3.0)
+        PS4: utilityDingNet_forest(4.0)
+        PS5: utilityDingNet_forest(5.0)
+        PS6: utilityDingNet_forest(6.0)
+        PS7: utilityDingNet_forest(7.0)
+        PS8: utilityDingNet_forest(8.0)
+        PS9: utilityDingNet_forest(9.0)
+        PS10: utilityDingNet_forest(10.0)
+        PS11: utilityDingNet_forest(11.0)
+        PS12: utilityDingNet_forest(12.0)
+        PS13: utilityDingNet_forest(13.0)
+        PS14: utilityDingNet_forest(14.0)
+    } }
+
+City{
+    arms: {
+        PS1: utilityDingNet_city(1.0)
+        PS2: utilityDingNet_city(2.0)
+        PS3: utilityDingNet_city(3.0)
+        PS4: utilityDingNet_city(4.0)
+        PS5: utilityDingNet_city(5.0)
+        PS6: utilityDingNet_city(6.0)
+        PS7: utilityDingNet_city(7.0)
+        PS8: utilityDingNet_city(8.0)
+        PS9: utilityDingNet_city(9.0)
+        PS10: utilityDingNet_city(10.0)
+        PS11: utilityDingNet_city(11.0)
+        PS12: utilityDingNet_city(12.0)
+        PS13: utilityDingNet_city(13.0)
+        PS14: utilityDingNet_city(14.0)
+    } }
+
+Plain{
+    arms: {
+        PS1: utilityDingNet_plain(1.0)
+        PS2: utilityDingNet_plain(2.0)
+        PS3: utilityDingNet_plain(3.0)
+        PS4: utilityDingNet_plain(4.0)
+        PS5: utilityDingNet_plain(5.0)
+        PS6: utilityDingNet_plain(6.0)
+        PS7: utilityDingNet_plain(7.0)
+        PS8: utilityDingNet_plain(8.0)
+        PS9: utilityDingNet_plain(9.0)
+        PS10: utilityDingNet_plain(10.0)
+        PS11: utilityDingNet_plain(11.0)
+        PS12: utilityDingNet_plain(12.0)
+        PS13: utilityDingNet_plain(13.0)
+        PS14: utilityDingNet_plain(14.0)
+    } }
+Trace: (Forest, 3) (City,3) (Plain, 3)
