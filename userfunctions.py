@@ -70,7 +70,7 @@ def utilitySWIM(arrival_rate, dimmer, avg_response_time, max_servers, servers):
     return truncated_reward
 
 #############################################################################################################
-#EVERYTHING BELOW HERE IS FOR DINGNET. THIS IS WHERE WE WILL BE WORKING! <3 
+#EVERYTHING BELOW HERE BASIC DATA PROCESSING.
 
 def xml_to_df(root, path):
     data = []
@@ -143,6 +143,11 @@ all_data['received'] = all_data['received'].map({'true': True, 'false': False})
 
 # Convert the 'energy' column to numeric, forcing non-numeric values to NaN
 all_data['energy'] = pd.to_numeric(all_data['energy'], errors='coerce')
+
+
+#############################################################################################################
+#EVERYTHING BELOW HERE IS FOR DINGNET. THIS IS WHERE WE WILL BE WORKING! <3
+
 
 def powerConsumed(powerSetting):
     # Filter the data for the given environment and power setting
