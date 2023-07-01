@@ -15,7 +15,7 @@ import csv
 LINE_DATA_POINTS = 10
 TOTAL_ROUNDS = 0
 NUM_SEEDS = 30
-CSV_name = "resultDingNet2.csv"
+CSV_name = "resultDingNet2.csv" #CHANGE FILE NAME HERE
 
 SWIM_ORDERING = {"UCB-TN" : 1,
 "egreedy-0.2" : 2,
@@ -254,6 +254,3 @@ def lineplotter(lineplot_data,result_path):
 
     plt.savefig(result_path + "lineplot.pdf") 
     plt.cla()
-
-# boxplotter("/Users/adamoentoro/Documents/GitHub/MockSAS/profiles/DingNetProfile.txt")
-# lineplotter("/Users/adamoentoro/Documents/GitHub/MockSAS/profiles/DingNetProfile.txt")
