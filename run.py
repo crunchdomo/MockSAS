@@ -15,13 +15,13 @@ import csv
 LINE_DATA_POINTS = 10
 TOTAL_ROUNDS = 0
 NUM_SEEDS = 30
-CSV_name = "resultDingNet2.csv" #CHANGE FILE NAME HERE
+CSV_name = "DingNet2.csv" #CHANGE FILE NAME HERE
 
-SWIM_ORDERING = {"UCB-TN" : 1,
+ORDERING = {"UCB-TN" : 1,
 "egreedy-0.2" : 2,
 "DUCB-0.997" : 3,
 "DUCB-0.995" : 4,
-"egreedy-0.4" : 5,
+"egreedy-0.3" : 5,
 "EXP3-333" : 6,
 "DUCB-0.992" : 7,
 "DUCB-0.99" : 8,
@@ -73,7 +73,7 @@ def describe_config(config):
 # [{'name': "egreedy", 'epsilon': "0.4"}],[{'name': "egreedy", 'epsilon': "0.5"}], [{'name': "egreedy", 'epsilon': "0.6"}],[{'name': "egreedy", 'epsilon': "0.7"}], \
 # [{'name': "egreedy", 'epsilon': "0.8"}],[{'name': "egreedy", 'epsilon': "0.9"}],[{'name': "egreedy", 'epsilon': "1.0"}]]
 
-egreedies = [{'name': "egreedy", 'epsilon': "0.2"}, {'name': "egreedy", 'epsilon': "0.4"},{'name': "egreedy", 'epsilon': "0.6"}, \
+egreedies = [{'name': "egreedy", 'epsilon': "0.2"}, {'name': "egreedy", 'epsilon': "0.3"},{'name': "egreedy", 'epsilon': "0.6"}, \
 {'name': "egreedy", 'epsilon': "0.8"},{'name': "egreedy", 'epsilon': "1.0"}]
 
 ucbs = [{'name': "UCB", 'formula': "TN"}]
@@ -124,7 +124,7 @@ for i in range(NUM_SEEDS):
     ranking = (list({k: v for k, v in sorted(position_dict.items(), key=lambda item: item[1], reverse= True)}.keys()))
 
     for policy in ranking:
-        final_res[policy]["match_dingnet"].append(1 if ((ranking.index(policy)+1) == SWIM_ORDERING[policy]) else 0)
+        final_res[policy]["match_dingnet"].append(1 if ((ranking.index(policy)+1) == ORDERING[policy]) else 0)
         final_res[policy]["positions"].append(ranking.index(policy)+1)
 
 

@@ -220,29 +220,133 @@ def _packet_success_city(powerSetting):
 def _packet_success_plain(powerSetting):
     return _packet_success("Plain", powerSetting)
 
-#THIS IS MY UTILITY FUNCTION FOR DINGNET
+# Compute the min and max of packet success rate and power consumed across all settings and environments
+packet_success_rates = [_packet_success(environment, powerSetting) for environment in ['Forest', 'City', 'Plain'] for powerSetting in range(1, 15)]
+min_packet_success, max_packet_success = min(packet_success_rates), max(packet_success_rates)
 
-#MAYBE ADD SOME PRETTY GRAPHS TOO? >:) <3
+power_consumptions = [powerConsumed(powerSetting) for powerSetting in range(1, 15)]
+min_power_consumed, max_power_consumed = min(power_consumptions), max(power_consumptions)
+
+def normalize(value, min_value, max_value):
+    normalized_value = (value - min_value) / (max_value - min_value)
+    return normalized_value
+
 def _utilityDingNet(_packet_success_func, power_func, powerSetting, power_penalty_factor):
-    # compute the packet success rate using the passed function
-    _packet_success = _packet_success_func(powerSetting)
-    # compute the power consumed using the passed function
-    power_consumed = power_func(powerSetting)
-    # utility computation logic
-    utility = _packet_success - power_penalty_factor * power_consumed
-    return utility
+    try:
+        _packet_success = normalize(_packet_success_func(powerSetting), min_packet_success, max_packet_success)
+        power_consumed = normalize(power_func(powerSetting), min_power_consumed, max_power_consumed)
+        utility = _packet_success - power_penalty_factor * power_consumed
+        return utility
+    except Exception as e:
+        print(f"Error computing utility for power setting {powerSetting}: {e}")
+        return None
 
-def utilityDingNet_forest(powerSetting):
-    return _utilityDingNet(_packet_success_forest, powerConsumed, powerSetting, 0.5)
+def utilityDingNet_forest(powerSetting, power_penalty_factor= 0.08056640625):
+    return _utilityDingNet(_packet_success_forest, powerConsumed, powerSetting, power_penalty_factor)
 
-def utilityDingNet_city(powerSetting):
-    return _utilityDingNet(_packet_success_city, powerConsumed, powerSetting, 0.5)
+def utilityDingNet_city(powerSetting, power_penalty_factor=0.88037109375):
+    return _utilityDingNet(_packet_success_city, powerConsumed, powerSetting, power_penalty_factor)
 
-def utilityDingNet_plain(powerSetting):
-    return _utilityDingNet(_packet_success_plain, powerConsumed, powerSetting, 0.5)
+def utilityDingNet_plain(powerSetting, power_penalty_factor=0.35693359375):
+    return _utilityDingNet(_packet_success_plain, powerConsumed, powerSetting, power_penalty_factor)
 
-print(utilityDingNet_forest(1))
-print(utilityDingNet_forest(14))
+
+
+#determine optimal power_penalty_factor for Dingnet
+def binary_search(func, low, high, tol=1e-3, max_iter=100):
+    for _ in range(max_iter):
+        mid = (low + high) / 2
+        if high - low < tol:
+            return mid
+        if func(mid) > func(mid + tol):
+            high = mid
+        else:
+            low = mid
+    return mid
+
+
+packet_success_funcs = {
+    "Forest": _packet_success_forest,
+    "City": _packet_success_city,
+    "Plain": _packet_success_plain,
+}
+
+def total_utility_per_environment(environment, power_penalty_factor):
+    total_utility = 0
+    
+    if environment not in packet_success_funcs:
+        raise ValueError(f'Unknown environment: {environment}')
+    
+    for powerSetting in range(1, 15):
+        total_utility += _utilityDingNet(packet_success_funcs[environment], powerConsumed, powerSetting, power_penalty_factor)
+        print(f"Total Utility {powerSetting} for {environment}: {total_utility}")
+            
+    if total_utility == 0:
+        raise ValueError('Total utility cannot be 0')
+    
+    print(f"Total Utility for {environment}: {total_utility}")
+    return total_utility
+
+environments = ['Forest', 'City', 'Plain']
+optimal_power_penalty_factors = {}
+
+for environment in environments:
+    optimal_power_penalty_factors[environment] = binary_search(lambda ppf: total_utility_per_environment(environment, ppf), 0, 1)
+
+for environment, optimal_ppf in optimal_power_penalty_factors.items():
+    print(f'Optimal power penalty factor for {environment}: {optimal_ppf}')
+
+
+
+
+#Epislon Greedy Search
+def epsilon_greedy(utilities, epsilon):
+    if np.random.rand() < epsilon:
+        # Exploration: choose a random power setting
+        powerSetting = np.random.choice(len(utilities))
+    else:
+        # Exploitation: choose the power setting with the highest estimated utility
+        powerSetting = np.argmax(utilities)
+    return powerSetting
+
+# The utility functions for different environments
+utility_funcs = {
+    "Forest": utilityDingNet_forest,
+    "City": utilityDingNet_city,
+    "Plain": utilityDingNet_plain,
+}
+
+# Initialize estimated utilities for each environment
+estimated_utilities = {environment: np.zeros(14) for environment in environments}
+
+# Number of times each power setting has been chosen for each environment
+counts = {environment: np.zeros(14) for environment in environments}
+
+# Total number of trials
+N = 1000
+
+for environment in environments:
+    for i in range(N):
+        # Choose a power setting
+        powerSetting = epsilon_greedy(estimated_utilities[environment], epsilon=0.1)
+
+        # Get the utility of the chosen power setting
+        utility = utility_funcs[environment](powerSetting+1, optimal_power_penalty_factors[environment])
+        
+        # If utility is None, skip the current iteration
+        if utility is None:
+            continue
+
+        # Update the estimated utility of the chosen power setting
+        counts[environment][powerSetting] += 1
+        estimated_utilities[environment][powerSetting] = ((counts[environment][powerSetting] - 1) / counts[environment][powerSetting]) * estimated_utilities[environment][powerSetting] + (1 / counts[environment][powerSetting]) * utility
+
+# Now, the best power setting for each environment can be found as follows:
+best_power_settings = {environment: np.argmax(utilities) + 1 for environment, utilities in estimated_utilities.items()}
+
+print(best_power_settings)
+
+
 
 
 #EXHAUSTIVE SEARCH ALGORITHM BELOW 
@@ -339,3 +443,5 @@ print(best_power_environment())
 # best_configs = exhaustive_search()
 # for environment, (best_power_setting, best_utility) in best_configs.items():
 #     print(f"The best power setting for {environment} is {best_power_setting} with a utility of {best_utility}")
+################################################################################################################################################
+

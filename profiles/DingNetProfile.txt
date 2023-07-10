@@ -51,4 +51,4 @@ Plain{
         PS13: utilityDingNet_plain(13.0)
         PS14: utilityDingNet_plain(14.0)
     } }
-Trace: (Forest, 3) (City,3) (Plain, 3)
+Trace: (Forest, 166) (City,166) (Plain, 166)
